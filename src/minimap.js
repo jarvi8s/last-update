@@ -9,13 +9,16 @@ export function createMinimap() {
   return minimap;
 }
 
-export function updateMinimap(minimap, ship, enemy, bullets, screenWidth, screenHeight) {
+export function updateMinimap(minimap, ship, enemy, bullets, screenWidth, screenHeight, theme) {
   minimap.clear();
+
+  const minimapBg = theme?.minimapBg ?? 0x1a1a2e;
+  const minimapBorder = theme?.minimapBorder ?? 0x00ff00;
   
   // Background
   minimap.rect(0, 0, MINIMAP_WIDTH, MINIMAP_HEIGHT);
-  minimap.fill(0x1a1a2e);
-  minimap.stroke({ color: 0x00ff00, width: 2 });
+  minimap.fill(minimapBg);
+  minimap.stroke({ color: minimapBorder, width: 2 });
   
   // Center point (ship is always centered on camera)
   const centerX = MINIMAP_WIDTH / 2;
@@ -36,7 +39,7 @@ export function updateMinimap(minimap, ship, enemy, bullets, screenWidth, screen
   const enemyY = centerY + (enemy.y - ship.y) * MINIMAP_SCALE;
   
   // Only draw if within bounds
-  if (Math.abs(enemyX - centerX) < MINIMAP_WIDTH && Math.abs(enemyY - centerY) < MINIMAP_HEIGHT) {
+  if (enemy.visible && Math.abs(enemyX - centerX) < MINIMAP_WIDTH && Math.abs(enemyY - centerY) < MINIMAP_HEIGHT) {
     minimap.circle(enemyX, enemyY, 3);
     minimap.fill(0xff6b6b);
   }

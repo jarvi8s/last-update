@@ -16,6 +16,10 @@ export function setupInputListener(onShoot, canvas, ship, world, screenWidth, sc
     if (e.code === "Space") {   //ates etmek icin keydown bu
       e.preventDefault(); // Prevent page scroll
 
+      if (ship.canShoot === false) {
+        return;
+      }
+
       // Accuracy spread: good=tiny, normal=medium, bad=large
       const accuracyLevel = ship.accuracyLevel || "normal";
       const spreadMap = { good: 0.04, normal: 0.13, bad: 0.28 };
