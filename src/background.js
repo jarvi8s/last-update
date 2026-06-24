@@ -53,14 +53,14 @@ export function updateParallaxBackground(layers, ship, world, zoneVisual = null,
 
   if (!zoneVisual) return;
 
-  if (layers[0]) {
-    layers[0].alpha = zoneVisual.bg1Alpha ?? layers[0].baseAlpha ?? layers[0].alpha;
-    layers[0].tint = zoneVisual.bgTint;
-  }
-  if (layers[1]) {
-    layers[1].alpha = zoneVisual.bg2Alpha ?? layers[1].baseAlpha ?? layers[1].alpha;
-    layers[1].tint = zoneVisual.bgTint;
-  }
+  const applyLayerVisuals = (layer, alphaValue) => {
+    if (!layer) return;
+    layer.alpha = typeof alphaValue === "number" ? alphaValue : (layer.baseAlpha ?? layer.alpha);
+    layer.tint = zoneVisual.bgTint;
+  };
+  applyLayerVisuals(layers[0], zoneVisual.bg1Alpha);
+  applyLayerVisuals(layers[1], zoneVisual.bg2Alpha);
+
   if (nebula) {
     nebula.alpha = zoneVisual.nebulaAlpha;
     nebula.tint = zoneVisual.bgTint;

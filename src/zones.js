@@ -49,23 +49,29 @@ const ZONE_DEFINITIONS = [
   }
 ];
 
+// Keep definitions order-independent so future zones can be inserted without breaking boundary math.
+const ORDERED_ZONE_DEFINITIONS = [...ZONE_DEFINITIONS].sort((a, b) => a.maxDistance - b.maxDistance);
+
 const ZONE_RADII = {
-  safe: ZONE_DEFINITIONS[0].maxDistance,
-  pve: ZONE_DEFINITIONS[1].maxDistance
+  safe: ORDERED_ZONE_DEFINITIONS.find((zone) => zone.id === ZONES.SAFE)?.maxDistance ?? 520,
+  pve: ORDERED_ZONE_DEFINITIONS.find((zone) => zone.id === ZONES.PVE)?.maxDistance ?? 1800
 };
 
 const DEFAULT_TRANSITION_WIDTH = 260;
+const DEFAULT_ZONE_DEFINITION =
+  ORDERED_ZONE_DEFINITIONS.find((zone) => zone.id === ZONES.PVP) ??
+  ORDERED_ZONE_DEFINITIONS[ORDERED_ZONE_DEFINITIONS.length - 1];
 
 function getDistance(x, y) {
   return Math.hypot(x, y);
 }
 
 function getZoneDefinition(zone) {
-  return ZONE_DEFINITIONS.find((entry) => entry.id === zone) ?? ZONE_DEFINITIONS[ZONE_DEFINITIONS.length - 1];
+  return ORDERED_ZONE_DEFINITIONS.find((entry) => entry.id === zone) ?? DEFAULT_ZONE_DEFINITION;
 }
 
 function getZoneByDistance(distance) {
-  return ZONE_DEFINITIONS.find((zone) => distance <= zone.maxDistance) ?? ZONE_DEFINITIONS[ZONE_DEFINITIONS.length - 1];
+  return ORDERED_ZONE_DEFINITIONS.find((zone) => distance <= zone.maxDistance) ?? DEFAULT_ZONE_DEFINITION;
 }
 
 function lerp(a, b, t) {
@@ -95,15 +101,15 @@ function blendHexColor(colorA, colorB, t) {
 function getTransitionBlend(distance, transitionWidth = DEFAULT_TRANSITION_WIDTH) {
   if (transitionWidth <= 0) return null;
 
-  for (let i = 0; i < ZONE_DEFINITIONS.length - 1; i++) {
-    const current = ZONE_DEFINITIONS[i];
-    const next = ZONE_DEFINITIONS[i + 1];
+  for (let i = 0; i < ORDERED_ZONE_DEFINITIONS.length - 1; i++) {
+    const current = ORDERED_ZONE_DEFINITIONS[i];
     if (!Number.isFinite(current.maxDistance)) continue;
+    const next = ORDERED_ZONE_DEFINITIONS[i + 1];
 
     const start = current.maxDistance - transitionWidth / 2;
     const end = current.maxDistance + transitionWidth / 2;
     if (distance >= start && distance <= end) {
-      const blend = smoothStep((distance - start) / transitionWidth);
+      const blend = smoothStep((distance - start) / (end - start));
       return { from: current, to: next, amount: blend };
     }
   }
