@@ -11,11 +11,11 @@ import {
 } from "./stars.js";
 import { createAsteroids, updateAsteroids } from "./asteroids.js";
 import { createBulletTrail, updateTrails } from "./bulletTrail.js";
-import { createParallaxLayers, updateParallaxBackground, createNebulaClouds } from "./background.js";
+import { createParallaxLayers, updateParallaxBackground, createNebulaClouds, createZoneOverlay, updateZoneOverlay } from "./background.js";
 import { createAccuracyPickups, updatePickupPulse, checkPickupCollection } from "./accuracyPickup.js";
 import { createMiningSystem } from "./mining.js";
 import { createInventorySystem } from "./inventory.js";
-import { getZoneAtPosition, getZoneColor, getZoneLabel } from "./zones.js";
+import { getZoneColor, getZoneLabel, getZoneVisualState } from "./zones.js";
 import { RESOURCE_TYPES } from "./resources.js";
 
 const SCREEN_WIDTH = 800;
@@ -48,6 +48,9 @@ export async function startGame() {
   // Create twinkling stars
   const { container: twinklingStarsContainer, stars: twinklingStars } = createTwinklingStars(SCREEN_WIDTH, SCREEN_HEIGHT, 150);
   app.stage.addChild(twinklingStarsContainer);
+
+  const zoneOverlay = createZoneOverlay(SCREEN_WIDTH, SCREEN_HEIGHT);
+  app.stage.addChild(zoneOverlay);
 
   // Create world
   const world = new Container();
@@ -187,17 +190,20 @@ export async function startGame() {
 
   // Game loop
   app.ticker.add(() => {
-    // Update parallax background
-    updateParallaxBackground(parallaxLayers, ship, world);
-
-    // Update camera
-    updateCamera(world, ship, SCREEN_WIDTH, SCREEN_HEIGHT);
-
     // Update ship rotation
     updateShipRotation(ship);
 
     // Handle player movement
     handleMovement(ship);
+
+    const zoneVisual = getZoneVisualState(ship.x, ship.y);
+
+    // Update parallax background
+    updateParallaxBackground(parallaxLayers, ship, world, zoneVisual, nebula);
+    updateZoneOverlay(zoneOverlay, zoneVisual);
+
+    // Update camera
+    updateCamera(world, ship, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     // Update asteroids
     updateAsteroids(asteroids);
@@ -269,7 +275,7 @@ export async function startGame() {
         : "3-Mining";
     infoText.text = `Speed: ${speed.toFixed(1)} | Hull: ${Math.max(0, ship.hull).toFixed(0)} | Enemy HP: ${Math.max(0, enemy.health)} | Mode: ${bulletLabel}`;
 
-    const zone = getZoneAtPosition(ship.x, ship.y);
+    const zone = zoneVisual.zone;
     zoneText.text = `Zone: ${getZoneLabel(zone)}`;
     zoneText.style.fill = getZoneColor(zone);
 
