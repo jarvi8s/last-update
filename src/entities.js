@@ -104,6 +104,11 @@ export function createShip(character = "balanced") {
   ship.lastX = 0;
   ship.lastY = 0;
   ship.bulletType = "light"; // Default bullet type
+  ship.hull = 100;
+  ship.collisionCooldown = 0;
+  ship.collisionFlash = 0;
+  ship.miningProgress = 0;
+  ship.miningTarget = null;
   
   return ship;
 }

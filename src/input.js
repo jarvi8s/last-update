@@ -4,7 +4,7 @@ export let mousePos = { x: 0, y: 0 };
 const SPEED_LEVELS = [0, 3, 5, 7, 10];
 //const ROTATION_SPEED = 0.1; //sen neden hala varsin bilmiyorum ama bi rotation speed lazim gelecek icin simdilik dur
 
-export function setupInputListener(onShoot, canvas, ship, world, screenWidth, screenHeight) {
+export function setupInputListener(onShoot, canvas, ship, world, screenWidth, screenHeight, canShoot = () => true) {
   ship.vx = 0;
   ship.vy = 0;
   ship.speedLevel = 0;
@@ -15,6 +15,9 @@ export function setupInputListener(onShoot, canvas, ship, world, screenWidth, sc
     keys[e.code] = true;    
     if (e.code === "Space") {   //ates etmek icin keydown bu
       e.preventDefault(); // Prevent page scroll
+      if (!canShoot()) {
+        return;
+      }
 
       // Accuracy spread: good=tiny, normal=medium, bad=large
       const accuracyLevel = ship.accuracyLevel || "normal";

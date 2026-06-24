@@ -9,7 +9,7 @@ export function createMinimap() {
   return minimap;
 }
 
-export function updateMinimap(minimap, ship, enemy, bullets, screenWidth, screenHeight) {
+export function updateMinimap(minimap, ship, enemy, bullets, ores = [], screenWidth, screenHeight) {
   minimap.clear();
   
   // Background
@@ -51,6 +51,16 @@ export function updateMinimap(minimap, ship, enemy, bullets, screenWidth, screen
       const color = bullet.type === "light" ? 0xffff00 : 0xff6600;
       minimap.circle(bulletX, bulletY, 1.5);
       minimap.fill(color);
+    }
+  }
+
+  // Draw ores
+  for (const ore of ores) {
+    const oreX = centerX + (ore.x - ship.x) * MINIMAP_SCALE;
+    const oreY = centerY + (ore.y - ship.y) * MINIMAP_SCALE;
+    if (Math.abs(oreX - centerX) < MINIMAP_WIDTH && Math.abs(oreY - centerY) < MINIMAP_HEIGHT) {
+      minimap.circle(oreX, oreY, 2);
+      minimap.fill(ore.baseColor ?? 0xffffff);
     }
   }
   

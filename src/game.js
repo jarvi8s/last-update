@@ -1,6 +1,6 @@
 import { Application, Container, Text, TextStyle, Graphics } from "pixi.js";
 import { createShip, createEnemy, createBullet } from "./entities.js";
-import { setupInputListener, handleMovement, updateShipRotation } from "./input.js";
+import { setupInputListener, handleMovement, updateShipRotation, keys } from "./input.js";
 import { checkBulletCollisions, updateBullets, updateCamera } from "./physics.js";
 import { createMinimap, updateMinimap } from "./minimap.js";
 import { 
@@ -13,6 +13,9 @@ import { createAsteroids, updateAsteroids } from "./asteroids.js";
 import { createBulletTrail, updateTrails } from "./bulletTrail.js";
 import { createParallaxLayers, updateParallaxBackground, createNebulaClouds } from "./background.js";
 import { createAccuracyPickups, updatePickupPulse, checkPickupCollection } from "./accuracyPickup.js";
+import { createMiningSystem } from "./mining.js";
+import { createInventorySystem } from "./inventory.js";
+import { getZoneAtPosition, getZoneColor, getZoneLabel } from "./zones.js";
 
 const SCREEN_WIDTH = 800;
 const SCREEN_HEIGHT = 600;
@@ -62,6 +65,9 @@ export async function startGame() {
   const enemy = createEnemy("fast");
   const bullets = [];
   const trails = [];
+  const inventorySystem = createInventorySystem(SCREEN_WIDTH, SCREEN_HEIGHT);
+  app.stage.addChild(inventorySystem.container);
+  const miningSystem = createMiningSystem(world);
 
   // Accuracy system
   // Levels: "bad" < "normal" < "good"
@@ -92,12 +98,31 @@ export async function startGame() {
     world.addChild(bullet);
   };
   
-  setupInputListener(shootFunction, app.canvas, ship, world, SCREEN_WIDTH, SCREEN_HEIGHT);
+  setupInputListener(shootFunction, app.canvas, ship, world, SCREEN_WIDTH, SCREEN_HEIGHT, () => (
+    ship.bulletType !== "mining" && !inventorySystem.state.isOpen
+  ));
 
   // Bullet type switching with keys
   window.addEventListener("keydown", (e) => {
     if (e.key === "1") ship.bulletType = "light";
     if (e.key === "2") ship.bulletType = "heavy";
+    if (e.key === "3") ship.bulletType = "mining";
+    if (e.key === "i" || e.key === "I") {
+      e.preventDefault();
+      inventorySystem.toggle();
+    }
+    if (inventorySystem.state.isOpen && e.code === "ArrowUp") {
+      e.preventDefault();
+      inventorySystem.moveSelection(-1);
+    }
+    if (inventorySystem.state.isOpen && e.code === "ArrowDown") {
+      e.preventDefault();
+      inventorySystem.moveSelection(1);
+    }
+    if (inventorySystem.state.isOpen && e.code === "Space") {
+      e.preventDefault();
+      inventorySystem.triggerActionMenu();
+    }
   });
 
   // Accuracy HUD
@@ -140,6 +165,25 @@ export async function startGame() {
   titleText.y = 5;
   app.stage.addChild(titleText);
 
+  const zoneText = new Text({
+    text: "Zone: SAFE",
+    style: new TextStyle({ fontSize: 15, fill: 0x6fd3ff, fontWeight: "bold" })
+  });
+  zoneText.x = 10;
+  zoneText.y = 74;
+  app.stage.addChild(zoneText);
+
+  const miningText = new Text({
+    text: "Mining: Ready",
+    style: new TextStyle({ fontSize: 14, fill: 0x9de3ff })
+  });
+  miningText.x = 10;
+  miningText.y = 96;
+  app.stage.addChild(miningText);
+
+  const collisionOverlay = new Graphics();
+  app.stage.addChild(collisionOverlay);
+
   // Game loop
   app.ticker.add(() => {
     // Update parallax background
@@ -166,6 +210,14 @@ export async function startGame() {
   SCREEN_HEIGHT
 );
     updateBullets(bullets, world);
+
+    const miningState = miningSystem.update({
+      ship,
+      isMiningActive: ship.bulletType === "mining" && keys["Space"],
+      isInventoryOpen: inventorySystem.state.isOpen,
+      inventorySystem,
+      delta: app.ticker.deltaTime
+    });
 
     // Create bullet trails
     for (const bullet of bullets) {
@@ -203,13 +255,37 @@ export async function startGame() {
     updatePickupPulse(pickups);
 
     // Update minimap
-    updateMinimap(minimap, ship, enemy, bullets, SCREEN_WIDTH, SCREEN_HEIGHT);
+    updateMinimap(minimap, ship, enemy, bullets, miningState.ores, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     // Calculate current speed
     const speed = Math.sqrt(ship.vx * ship.vx + ship.vy * ship.vy);
 
     // Update info display
-    infoText.text = `Speed: ${speed.toFixed(1)} | Enemy HP: ${Math.max(0, enemy.health)} | Bullet: ${ship.bulletType === "light" ? "1-Light" : "2-Heavy"}`;
+    const bulletLabel = ship.bulletType === "light"
+      ? "1-Light"
+      : ship.bulletType === "heavy"
+        ? "2-Heavy"
+        : "3-Mining";
+    infoText.text = `Speed: ${speed.toFixed(1)} | Hull: ${Math.max(0, ship.hull).toFixed(0)} | Enemy HP: ${Math.max(0, enemy.health)} | Mode: ${bulletLabel}`;
+
+    const zone = getZoneAtPosition(ship.x, ship.y);
+    zoneText.text = `Zone: ${getZoneLabel(zone)}`;
+    zoneText.style.fill = getZoneColor(zone);
+
+    if (ship.bulletType === "mining") {
+      const targetLabel = miningState.target
+        ? `${miningState.target.resourceId} ${Math.max(0, miningState.target.health).toFixed(0)}/${miningState.target.maxHealth}`
+        : "No target";
+      miningText.text = `Mining: ${miningState.progress.toFixed(0)}% | ${targetLabel}`;
+    } else {
+      miningText.text = "Mining: switch to 3-Mining";
+    }
+
+    collisionOverlay.clear();
+    if (ship.collisionFlash > 0) {
+      collisionOverlay.rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+      collisionOverlay.fill({ color: 0xff6b6b, alpha: 0.2 * ship.collisionFlash });
+    }
 
     // Update accuracy HUD
     const level = ship.accuracyLevel;
