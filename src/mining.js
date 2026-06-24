@@ -9,6 +9,11 @@ const ORE_TYPES = [
 const MAX_BEAM_DISTANCE = 300;
 const MINING_RATE = 2;
 const ORE_DAMAGE_PER_CYCLE = 12;
+const ORE_HIT_TOLERANCE = 0.78;
+const COLLISION_SPEED_THRESHOLD = 2;
+const COLLISION_DAMAGE_MULTIPLIER = 1.8;
+const MIN_COLLISION_DAMAGE = 1;
+const MAX_COLLISION_DAMAGE = 20;
 const STARTING_ORE_COUNTS = {
   pve: 12,
   pvp: 12
@@ -116,7 +121,7 @@ export function createMiningSystem(world) {
       const projection = relX * directionX + relY * directionY;
       if (projection < 0 || projection > MAX_BEAM_DISTANCE) continue;
       const perpendicular = Math.abs(relX * directionY - relY * directionX);
-      if (perpendicular <= ore.size * 0.78 && projection < closestDistance) {
+      if (perpendicular <= ore.size * ORE_HIT_TOLERANCE && projection < closestDistance) {
         closest = ore;
         closestDistance = projection;
       }
@@ -133,9 +138,12 @@ export function createMiningSystem(world) {
     if (ship.collisionCooldown > 0) return;
 
     const speed = Math.hypot(ship.vx || 0, ship.vy || 0);
-    if (speed < 2) return;
+    if (speed < COLLISION_SPEED_THRESHOLD) return;
 
-    const damage = Math.min(20, Math.max(1, (speed - 2) * 1.8));
+    const damage = Math.min(
+      MAX_COLLISION_DAMAGE,
+      Math.max(MIN_COLLISION_DAMAGE, (speed - COLLISION_SPEED_THRESHOLD) * COLLISION_DAMAGE_MULTIPLIER)
+    );
     ship.hull = Math.max(0, ship.hull - damage);
     ship.collisionCooldown = 12;
     ship.collisionFlash = 1;
@@ -179,7 +187,7 @@ export function createMiningSystem(world) {
     }
 
     if (!isMiningActive || isInventoryOpen) {
-      ship.miningProgress = 0;
+      ship.miningProgress -= 100;
       ship.miningTarget = null;
       return { active: false, progress: 0, target: null, ores };
     }

@@ -16,6 +16,7 @@ import { createAccuracyPickups, updatePickupPulse, checkPickupCollection } from 
 import { createMiningSystem } from "./mining.js";
 import { createInventorySystem } from "./inventory.js";
 import { getZoneAtPosition, getZoneColor, getZoneLabel } from "./zones.js";
+import { RESOURCE_TYPES } from "./resources.js";
 
 const SCREEN_WIDTH = 800;
 const SCREEN_HEIGHT = 600;
@@ -273,8 +274,9 @@ export async function startGame() {
     zoneText.style.fill = getZoneColor(zone);
 
     if (ship.bulletType === "mining") {
+      const targetName = miningState.target ? (RESOURCE_TYPES[miningState.target.resourceId]?.name ?? miningState.target.resourceId) : "No target";
       const targetLabel = miningState.target
-        ? `${miningState.target.resourceId} ${Math.max(0, miningState.target.health).toFixed(0)}/${miningState.target.maxHealth}`
+        ? `${targetName} ${Math.max(0, miningState.target.health).toFixed(0)}/${miningState.target.maxHealth}`
         : "No target";
       miningText.text = `Mining: ${miningState.progress.toFixed(0)}% | ${targetLabel}`;
     } else {

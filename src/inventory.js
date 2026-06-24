@@ -1,7 +1,7 @@
 import { Container, Graphics, Text, TextStyle } from "pixi.js";
 import { RESOURCE_TYPES, createResourceStore, addResource } from "./resources.js";
 
-const ACTION_OPTIONS = ["Kullan", "Yakıta Dönüştür", "At", "Ticaret İçin İşaretle"];
+const ACTION_OPTIONS = ["Use", "Convert to Fuel", "Drop", "Mark for Trade"];
 
 export function createInventorySystem(screenWidth, screenHeight) {
   const container = new Container();
@@ -31,7 +31,7 @@ export function createInventorySystem(screenWidth, screenHeight) {
   container.addChild(title);
 
   const hint = new Text({
-    text: "↑/↓ seçim  |  Space etkileşim",
+    text: "↑/↓ select  |  Space actions",
     style: new TextStyle({ fill: 0xa8b2cc, fontSize: 12 })
   });
   hint.x = panel.x + 16;
